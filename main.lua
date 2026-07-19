@@ -132,7 +132,7 @@ local Settings = {
 local Aimbot = {
 	enabled = false,
 	keybind = Enum.KeyCode.LeftAlt,
-	mouseKeybind = nil, -- Enum.UserInputType.MouseButton1, MouseButton2, etc.
+	mouseKeybind = nil,
 	showFOV = false,
 	fovColor = Color3.fromRGB(230, 60, 110),
 	stickyAim = false,
@@ -140,7 +140,7 @@ local Aimbot = {
 	shiftlockState = false,
 	wallcheck = false,
 	ignoreDead = true,
-	hitbox = "Head", -- "Head", "Torso", "Legs"
+	hitbox = "Head",
 	closestBone = false,
 	fovSize = 50,
 	maxDistance = 300,
@@ -949,7 +949,6 @@ local function createDropdown(parent, name, options, defaultIndex, callback)
 		end
 	end)
 
-	-- Zamknij gdy klikniesz gdzieś indziej
 	UserInputService.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			local mousePos = input.Position
@@ -3631,7 +3630,6 @@ local function getHitboxPosition(char, hitboxType)
 	elseif hitboxType == "Legs" then
 		local hrp = char:FindFirstChild("HumanoidRootPart")
 		if hrp then
-			-- Użyj HumanoidRootPart jako referencji dla nóg (środek)
 			return hrp
 		end
 		return char:FindFirstChild("LowerTorso")
@@ -3649,7 +3647,6 @@ local function getBonePositions(char)
 	if torso then table.insert(positions, {part=torso, name="Torso"}) end
 	if legs then table.insert(positions, {part=legs, name="Legs"}) end
 	
-	-- Dodaj też inne części jeśli dostępne
 	for _, child in pairs(char:GetChildren()) do
 		if child:IsA("BasePart") and child.Name:find("Arm") or child.Name:find("Leg") then
 			table.insert(positions, {part=child, name=child.Name})
@@ -3685,7 +3682,6 @@ local function getAimbotTarget()
 	local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
 	if not myHRP then return nil end
 	
-	-- Sprawdź shiftlock
 	if Aimbot.shiftlock and not Aimbot.shiftlockState then
 		return nil
 	end
@@ -3704,7 +3700,6 @@ local function getAimbotTarget()
 			local char = plr.Character
 			local hum = char:FindFirstChildOfClass("Humanoid")
 			
-			-- Ignoruj martwych
 			if Aimbot.ignoreDead and hum and hum.Health <= 0 then
 				goto continue
 			end
@@ -3712,21 +3707,18 @@ local function getAimbotTarget()
 				goto continue
 			end
 			
-			-- Sprawdź odległość
 			local hrp = char:FindFirstChild("HumanoidRootPart")
 			if not hrp then goto continue end
 			
 			local dist = (hrp.Position - myHRP.Position).Magnitude
 			if dist > maxDist then goto continue end
 			
-			-- Sprawdź wallcheck
 			if Aimbot.wallcheck then
 				if not checkVis(Camera.CFrame.Position, hrp.Position, {myChar, char}) then
 					goto continue
 				end
 			end
 			
-			-- Znajdź odpowiedni hitbox
 			local targetPart = nil
 			if Aimbot.closestBone then
 				targetPart = getClosestBonePosition(char, screenCenter)
@@ -3736,17 +3728,14 @@ local function getAimbotTarget()
 			
 			if not targetPart then goto continue end
 			
-			-- Sprawdź czy hitbox jest na ekranie
 			local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
 			if not onScreen then goto continue end
 			
 			local sp = Vector2.new(screenPos.X, screenPos.Y)
 			
-			-- Sprawdź FOV
 			local fovDist = (sp - screenCenter).Magnitude
 			if fovDist > fovSize then goto continue end
 			
-			-- Sticky Aim: jeśli mamy już target i jest w FOV, trzymaj się go
 			if Aimbot.stickyAim and aimLockTarget and aimLockTarget == plr then
 				local lockPart = getHitboxPosition(char, Aimbot.hitbox)
 				if lockPart then
@@ -3763,7 +3752,6 @@ local function getAimbotTarget()
 				end
 			end
 			
-			-- Score: im bliżej środka ekranu i im bliżej gracza, tym lepiej
 			local score = fovDist + (dist / 100)
 			if score < bestScore then
 				bestScore = score
@@ -3808,13 +3796,11 @@ local function aimbotLoop()
 	end
 	
 	aimbotConn = RunService.RenderStepped:Connect(function()
-		-- Sprawdź czy klawisz jest wciśnięty
 		local keyPressed = false
 		if Aimbot.keybind then
 			keyPressed = UserInputService:IsKeyDown(Aimbot.keybind)
 		end
 		if Aimbot.mouseKeybind then
-			-- Sprawdź przyciski myszy
 			if Aimbot.mouseKeybind == Enum.UserInputType.MouseButton1 then
 				keyPressed = keyPressed or UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
 			elseif Aimbot.mouseKeybind == Enum.UserInputType.MouseButton2 then
@@ -3824,7 +3810,6 @@ local function aimbotLoop()
 			end
 		end
 		
-		-- Shiftlock state - sprawdź czy Shift jest wciśnięty
 		Aimbot.shiftlockState = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)
 		
 		if not keyPressed then
@@ -3838,7 +3823,6 @@ local function aimbotLoop()
 		local target, targetPart = getAimbotTarget()
 		if not target or not targetPart then
 			if Aimbot.stickyAim then
-				-- Zachowaj ostatni target jeśli sticky aim włączony
 			else
 				aimTarget = nil
 			end
@@ -3847,25 +3831,21 @@ local function aimbotLoop()
 		
 		aimTarget = target
 		
-		-- Oblicz pozycję celu na ekranie
 		local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
 		if not onScreen then return end
 		
 		local targetPos = Vector2.new(screenPos.X, screenPos.Y)
 		local mousePos = UserInputService:GetMouseLocation()
 		
-		-- Smooth aim
 		local smoothX = Aimbot.smoothX
 		local smoothY = Aimbot.smoothY
 		
-		-- Jeśli smooth = 1 to natychmiastowy aim
 		if smoothX <= 1 and smoothY <= 1 then
 			mousePos = targetPos
 		else
 			mousePos = smoothAim(mousePos, targetPos, smoothX, smoothY)
 		end
 		
-		-- Przesuń mysz
 		mousemoverel(
 			math.floor(mousePos.X - UserInputService:GetMouseLocation().X),
 			math.floor(mousePos.Y - UserInputService:GetMouseLocation().Y)
@@ -3873,7 +3853,6 @@ local function aimbotLoop()
 	end)
 end
 
--- Nasłuchiwanie klawiszy dla shiftlock
 UserInputService.InputBegan:Connect(function(input, gp)
 	if gp then return end
 	if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
@@ -3888,7 +3867,6 @@ UserInputService.InputEnded:Connect(function(input, gp)
 	end
 end)
 
--- Uruchom aimbot loop
 task.spawn(function()
 	while true do
 		task.wait(0.5)
@@ -5718,7 +5696,7 @@ local function buildTriggerFinderPage(page)
 		local function loadPreset()
 			playClick()
 			CodeEditor.Text = preset.code
-			showNotification("Preset loaded: " .. preset.name, "info")
+				showNotification("Preset loaded: " .. preset.name, "info")
 		end
 		UseBtn.MouseButton1Click:Connect(loadPreset)
 		PRow.MouseButton1Click:Connect(loadPreset)
@@ -6161,12 +6139,8 @@ print("AC Scan: Results shown in GUI popup with STOP buttons per finding")
 print("[SBX] Player Info now shows Password & Phone for authorized players!")
 print("[SBX] Aimbot added with full features!")
 
--- ========== INICJALIZACJA ==========
--- Zaktualizuj FOV na start
 updateFOVCircle()
 FOVGui.Enabled = false
-
--- Ustaw FOVGui jako dziecko gracza
 FOVGui.Parent = player.PlayerGui
 
 print("SBX GUI v21 initialized successfully!")
