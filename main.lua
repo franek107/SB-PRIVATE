@@ -1,6 +1,3 @@
--- SBX GUI v21 (Executor + Draggable Watermark)
--- ZAWIERA WSZYSTKIE CZĘŚCI 1-5 + ULEPSZENIA + AIMBOT
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
